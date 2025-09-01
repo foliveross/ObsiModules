@@ -1,6 +1,7 @@
 plugins {
   id("com.android.application")
   id("org.jetbrains.kotlin.android")
+  id("org.jetbrains.kotlin.plugin.compose")   // <-- NUEVO
 }
 
 android {
@@ -24,9 +25,7 @@ android {
         "proguard-rules.pro"
       )
     }
-    debug {
-      isMinifyEnabled = false
-    }
+    debug { isMinifyEnabled = false }
   }
 
   compileOptions {
@@ -36,16 +35,17 @@ android {
   kotlinOptions { jvmTarget = "17" }
 
   buildFeatures { compose = true }
-  composeOptions {
-    kotlinCompilerExtensionVersion = "1.5.15"
-  }
 
-  packaging.resources.excludes += setOf(
-    "/META-INF/{AL2.0,LGPL2.1}"
-  )
+  // ❌ BORRAR este bloque si lo tienes (el plugin de Compose lo gestiona):
+  // composeOptions {
+  //   kotlinCompilerExtensionVersion = "1.5.15"
+  // }
+
+  packaging.resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}")
 }
 
 dependencies {
+  // Mantén el BOM de Compose
   val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
   implementation(composeBom)
   androidTestImplementation(composeBom)
@@ -57,9 +57,6 @@ dependencies {
   implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
   debugImplementation("androidx.compose.ui:ui-tooling")
 
-  // Markdown renderer
   implementation("com.github.jeziellago:compose-markdown:0.5.0")
-
-  // Share/export helper
   implementation("androidx.core:core-ktx:1.13.1")
 }
