@@ -10,7 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,11 +21,22 @@ jobs:
           java-version: 17
           cache: 'gradle'
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      # Android SDK + cmdline-tools en el runner
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      # Compila con Gradle 8.7 SIN wrapper
       - name: Build Debug APK
-        run: ./gradlew clean assembleDebug
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 8.7
+          arguments: assembleDebug
 
       - name: Upload Debug APK artifact
         uses: actions/upload-artifact@v4
@@ -34,11 +44,12 @@ jobs:
           name: ObsiModules-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
+  # Opcional: release manual firmado (requiere secretos). 
+  # Si aún no firmas, puedes omitir este job completo.
   release:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: build
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,6 +60,15 @@ jobs:
           distribution: temurin
           java-version: 17
           cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Decode keystore
         run: |
@@ -65,7 +85,10 @@ jobs:
           EOF
 
       - name: Build Release APK (signed)
-        run: ./gradlew clean assembleRelease -PsigningPropsFile=signing.properties
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 8.7
+          arguments: assembleRelease -PsigningPropsFile=signing.properties
 
       - name: Upload Release APK artifact
         uses: actions/upload-artifact@v4
